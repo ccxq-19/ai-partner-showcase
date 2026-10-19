@@ -15,7 +15,6 @@ FastAPI SSE 流式对话（展示版）
 from __future__ import annotations
 
 import json
-import os
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
