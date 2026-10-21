@@ -107,6 +107,18 @@ flowchart TB
 | [`src/ws_server.py`](src/ws_server.py) | WebSocket 六类事件、连接即会话、连接池、房间广播、断连清理 |
 | [`src/memory.py`](src/memory.py) | 长期记忆压缩：超阈值总结最老消息，失败不丢历史 |
 
+### 服务化完整版（services/）
+
+| 文件 | 看什么 |
+|---|---|
+| [`services/agent_lg.py`](services/agent_lg.py) | LangGraph 完整实现：系统提示词、工具定义、`InMemorySaver` checkpoint、`get_stream_writer` token 级外传 |
+| [`services/main_agent_lg.py`](services/main_agent_lg.py) | FastAPI 非流式封装：`thread_id = session_id`，同一会话多轮续档 |
+| [`services/main_agent_lg_stream.py`](services/main_agent_lg_stream.py) | FastAPI SSE 封装：`stream_mode=["custom","updates"]` → `token` / `node` 事件 |
+| [`services/ws_server.py`](services/ws_server.py) | WebSocket 完整服务：连接即会话、工具调用、`tool_call` / `tool_result` 事件、房间广播 |
+| [`toolbag.py`](toolbag.py) | 工具注册表（展示版为示例实现，函数签名与生产版一致） |
+
+> `src/` 是提炼版（按主题拆小，便于阅读）；`services/` 是服务化完整版（按运行时组织，可直接启动）。
+
 > 说明：为了可读性，展示代码做了适度简化（如天气/历史工具用示例实现），核心链路与生产版一致。
 
 ---
@@ -129,6 +141,16 @@ uvicorn src.ws_server:app --reload --port 8001
 
 # LangGraph Agent 命令行演示
 python -m src.langgraph_agent
+
+# ---------- 服务化完整版（services/） ----------
+# LangGraph Agent 非流式服务（Swagger: http://localhost:8010/docs）
+uvicorn services.main_agent_lg:server --reload --port 8010
+
+# LangGraph Agent SSE 流式服务
+uvicorn services.main_agent_lg_stream:server --reload --port 8020
+
+# WebSocket 聊天服务（ws://localhost:8030/ws/partner/assistant）
+uvicorn services.ws_server:app --reload --port 8030
 ```
 
 > RAG 示例需要先构建向量库（`data/vector_store.db`）。本仓库不包含任何真实知识库数据。
@@ -142,6 +164,7 @@ python -m src.langgraph_agent
 ├── README.md
 ├── requirements.txt
 ├── .env.example
+├── toolbag.py               # 工具注册表（展示版示例实现）
 ├── docs/
 │   └── architecture.png
 ├── screenshots/
@@ -152,13 +175,19 @@ python -m src.langgraph_agent
 │   ├── 05-rag-refuse.png
 │   ├── 06-swagger.png
 │   └── 07-swagger-response.png
-└── src/
-    ├── agent_loop.py        # 手写 Agent loop
-    ├── rag_pipeline.py      # RAG 全链路
-    ├── langgraph_agent.py   # LangGraph 状态图版
-    ├── sse_stream.py        # FastAPI SSE
-    ├── ws_server.py         # FastAPI WebSocket
-    └── memory.py            # 长期记忆压缩
+├── src/                      # 提炼版：按主题拆小，便于阅读
+│   ├── agent_loop.py        # 手写 Agent loop
+│   ├── rag_pipeline.py      # RAG 全链路
+│   ├── langgraph_agent.py   # LangGraph 状态图版
+│   ├── sse_stream.py        # FastAPI SSE
+│   ├── ws_server.py         # FastAPI WebSocket
+│   └── memory.py            # 长期记忆压缩
+└── services/                 # 服务化完整版：可直接启动
+    ├── __init__.py
+    ├── agent_lg.py          # LangGraph Agent（checkpoint + 流式）
+    ├── main_agent_lg.py     # FastAPI 非流式封装
+    ├── main_agent_lg_stream.py  # FastAPI SSE 封装
+    └── ws_server.py         # WebSocket 完整服务
 ```
 
 ---
