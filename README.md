@@ -106,6 +106,8 @@ flowchart TB
 | [`src/sse_stream.py`](src/sse_stream.py) | FastAPI `StreamingResponse` + 异步生成器；`token` / `node` / `done` 事件 |
 | [`src/ws_server.py`](src/ws_server.py) | WebSocket 六类事件、连接即会话、连接池、房间广播、断连清理 |
 | [`src/memory.py`](src/memory.py) | 长期记忆压缩：超阈值总结最老消息，失败不丢历史 |
+| [`src/db.py`](src/db.py) | SQLite 会话存储：sessions 单表、messages/full_history JSON、UPSERT、每次操作独立连接 |
+| [`src/toolbag.py`](src/toolbag.py) | 真实工具结构：关键词切分 / 泛词过滤 / 敏感词过滤、天气 API、历史搜索、RAG 检索 |
 
 ### 服务化完整版（services/）
 
@@ -118,6 +120,8 @@ flowchart TB
 | [`toolbag.py`](toolbag.py) | 工具注册表（展示版为示例实现，函数签名与生产版一致） |
 
 > `src/` 是提炼版（按主题拆小，便于阅读）；`services/` 是服务化完整版（按运行时组织，可直接启动）。
+> 两个 `toolbag.py` 的分工：根目录版本是服务层示例注册表（返回示例数据，保证 `services/` 可启动）；
+> `src/toolbag.py` 是真实工具结构（天气真实调用、历史接 SQLite、知识库接 RAG）。
 
 > 说明：为了可读性，展示代码做了适度简化（如天气/历史工具用示例实现），核心链路与生产版一致。
 
@@ -181,7 +185,9 @@ uvicorn services.ws_server:app --reload --port 8030
 │   ├── langgraph_agent.py   # LangGraph 状态图版
 │   ├── sse_stream.py        # FastAPI SSE
 │   ├── ws_server.py         # FastAPI WebSocket
-│   └── memory.py            # 长期记忆压缩
+│   ├── memory.py            # 长期记忆压缩
+│   ├── db.py                # SQLite 会话存储
+│   └── toolbag.py           # 真实工具结构（天气/历史/RAG）
 └── services/                 # 服务化完整版：可直接启动
     ├── __init__.py
     ├── agent_lg.py          # LangGraph Agent（checkpoint + 流式）
